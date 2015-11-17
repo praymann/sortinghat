@@ -36,7 +36,6 @@ module Sortinghat
 
     # Main method of Sortinghat
     def start!
-
       # Find out who is who, instances alive
       alive = cleanup(@aws.discover())
 
@@ -58,8 +57,19 @@ module Sortinghat
         start!()
       end 
 
-      @aws.setroute53(@options[:zone], @hostname, @fqdn)
+      # Register in DNS
+      @aws.setroute53(@options[:zone], @fqdn)
 
+      # Set the localhost hostname
+      setlocal()
+
+      # Set /etc/hosts
+      sethostsfile()
+
+      # Throw the hostname in /etc/sysconfig/httpd (if exists)
+      givetohttpd()
+
+      # All done
       finish!()
     end
 
@@ -106,6 +116,39 @@ module Sortinghat
     def construction()
       @hostname = "#{@options[:client]}-#{@options[:env]}-#{@options[:type]}#{@prefix.to_s}-#{@options[:region]}"
       @fqdn = "#{@options[:client]}-#{@options[:env]}-#{@options[:type]}#{@prefix.to_s}-#{@options[:region]}.#{@options[:zone]}"
+    end
+
+    def setlocal()
+      if system("hostnamectl set-hostname #{@fqdn}")
+        @log.info("Set the localhost hostname to #{@fqdn}.")
+      end
+    end
+
+    def sethostsfile()
+      # Store the ip address so we only make one metadata call here
+      privateip = @aws.privateip()
+      if File.readlines('/etc/hosts').grep(/#{@hostname}|#{privateip}/).size < 1 
+        File.open('/etc/hosts', 'a') do |file|
+          file.puts "#{@privateip} \t #{@hostname} #{@fqdn}"
+        end
+        @log.info("Added hostname(s) to /etc/hosts.")
+      else
+        @log.warn("The hostname(s) were already in /etc/hosts.")
+      end
+    end
+
+    def givetohttpd()
+      file = '/etc/sysconfig/httpd'
+      if File.exists?(file)
+        if File.readlines(file).grep(/HOSTNAME/).size < 1
+          @log.info("Found #{file}, appending HOSTNAME=#{@hostname}.")
+          File.open(file, 'a') do |file|
+            file.puts "HOSTNAME=#{@hostname}"
+          end
+        else
+          @log.warn("Found HOSTNAME already in #{file}")
+        end
+      end
     end
   end
 end
