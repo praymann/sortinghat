@@ -1,9 +1,52 @@
 #!/usr/bin/env ruby
 
 require 'sortinghat'
+require 'optparse'
 
-this = Sortinghat::Banquet.new
+options = {}
+
+parser = OptionParser.new do |opt|
+  opt.banner = "Usage: sortinghat [OPTIONS]"
+  opt.separator ""
+  opt.separator "All options are required for the Sorting Hat to function."
+  opt.separator "A trailing dot will be added to the zone should you forget it."
+  opt.separator ""
+  opt.separator "Options:"
+
+  opt.on("-c", "--client CLIENT", "Client name") do |client|
+    options[:client] = client
+  end
+
+  opt.on("-e", "--env ENVIRONMENT", "Environment name") do |environment|
+    options[:env] = environment
+  end
+
+  opt.on("-t", "--type TYPE", "Type name") do |type|
+    options[:type] = type
+  end
+
+  opt.on("-r", "--region REGION", "Region name") do |region|
+    options[:region] = region 
+  end
+
+  opt.on("-z", "--zone DOMAIN", "Hosted Zone") do |zone|
+    options[:zone] = zone
+  end
+
+  opt.on("-h", "--help", "Help menu") do
+    puts parser
+    exit 0
+  end
+end
+
+parser.parse!
+
+if options.length < 5 
+  abort "All options are required."
+end
+
+this = Sortinghat::Banquet.new(options)
 
 this.dejavu?
 
-this.begin!
+this.start!
