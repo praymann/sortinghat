@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+require 'sortinghat'
+
+this = Sortinghat::Banquet.new
+
+this.dejavu?
+
+this.begin!
