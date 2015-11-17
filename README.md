@@ -1,38 +1,77 @@
 # Sortinghat
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/sortinghat`. To experiment with that code, run `bin/console` for an interactive prompt.
+Sortinghat is a unqiue Ruby gem that allows AWS AutoScaling instances to name themselves.
 
-TODO: Delete this and the text above, and describe your gem
+We all understand that naming your cattle is bad, they shouldn't be pets.. but hostnames are handy and readable, and [insert reason].
 
-## Installation
+When the Sorting Hat is given specific arguments, it can find the gaps in current prefixes or +1 from the last current prefix and name the instance accordingly; along with updating Route53.
 
-Add this line to your application's Gemfile:
+It follows a specific pattern for hostnames/fqdn:
 
-```ruby
-gem 'sortinghat'
+```
+[client]-[environment]-[type][prefix].[domain].com.
+```
+For example:
+
+```
+nike-prod-nginx09.prod-internal.nike.com
 ```
 
-And then execute:
+## Installation:
 
-    $ bundle
-
-Or install it yourself as:
+Install however you please to your AMI(s) with:
 
     $ gem install sortinghat
 
-## Usage
+## Requirements:
 
-TODO: Write usage instructions here
+The gem itself was developed under Ruby 2.0.0 to work with CentOS 7.
+
+It requires the following gems:
+* aws-sdk ~> 2
+* pure_json
+
+During actually usage, the gem requires that the instance have the following IAM actions allowed via policy:
+* autoscaling:Describe*
+* ec2:DescribeInstances
+* ec2:CreateTags
+* route53:ListHostedZones
+* route53:ChangeResourceRecordSets
+
+## Usage:
+
+Note: The Sorting Hat requires root privileges to write to files under /etc/.
+
+Have cloud-init, cfn-init, or [x/y/z], issue the following command:
+
+    $ sortinghat -c [client] -e [environment] -t [type] -r [region] -z [domain]
+
+Note: [domain] should be in the format of [domain].com, just like the AWS Console reports for the HostedZone. No need to add the trailing dot, it will be added should you forget.
+
+The Sorting Hat will log to syslog for information.
+
+The Sorting Hat may be re-run, provided you remove the empty file located at '/etc/.sorted'.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+Need to develop on an EC2 instance with metadata available or spoof it somehow.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+Clone:
+
+    $ git clone https://github.com/praymann/sortinghat
+
+Execute:
+
+    $ bundle install
+
+Run:
+
+    $ bundle exec bin/sortinghat -h
+
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/sortinghat.
+Bug reports and pull requests are welcome on GitHub at https://github.com/praymann/sortinghat.
 
 
 ## License

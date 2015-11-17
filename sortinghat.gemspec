@@ -10,8 +10,8 @@ Gem::Specification.new do |spec|
   spec.email         = ["daniel@pramann.org"]
 
   spec.summary       = %q{Have auto-scaling instances name themselves!}
-  spec.description   = %q{Ruby gem with given arguements, allows an instance in an auto-scaling group to name/dns/tag itself.}
-  spec.homepage      = "http://www.pramann.org"
+  spec.description   = %q{Ruby gem which when given arguements, allows an instance in an auto-scaling group to name/dns/tag itself.}
+  spec.homepage      = "https://github.com/praymann/sortinghat"
   spec.license       = "MIT"
 
   # Prevent pushing this gem to RubyGems.org by setting 'allowed_push_host', or
