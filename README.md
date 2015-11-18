@@ -14,7 +14,7 @@ It follows a specific pattern for hostnames/fqdn:
 For example:
 
 ```
-nike-prod-nginx09.prod-internal.nike.com
+nike-prod-nginx09.prod-nike.com
 ```
 
 ## Installation:
@@ -32,7 +32,8 @@ It requires the following gems:
 * pure_json
 
 During actually usage, the gem requires that the instance have the following IAM actions allowed via policy:
-* autoscaling:Describe*
+* autoscaling:DescribeAutoScalingInstances
+* autoscaling:DescribeAutoScalingGroups
 * ec2:DescribeInstances
 * ec2:CreateTags
 * route53:ListHostedZones
@@ -72,7 +73,6 @@ Run:
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/praymann/sortinghat.
-
 
 ## License
 

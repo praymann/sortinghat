@@ -16,7 +16,7 @@ module Sortinghat
       @log = Syslog::Logger.new 'sortinghat'
     end
 
-    # Method to discover all the alive auto-scaling instances
+    # Method to discover what auto-scaling group the current instance is in, then the instances in that group
     # Returns array of the Name tag values of the instances
     def discover()
       # Temporay array for use
@@ -25,14 +25,25 @@ module Sortinghat
       # Start a new client
       autoscale = Aws::AutoScaling::Client.new( region: @region )
 
-      # Use the client to grab all autoscaling instances
-      resp = autoscale.describe_auto_scaling_instances()
-      @log.info("Grabbed all AutoScaling instances via aws-sdk")
+      # Use the client to describe this instance
+      current = autoscale.describe_auto_scaling_instances({
+        instance_ids: [grabinstanceid()],
+        max_records: 1
+      })
+      @log.info("Grabbed current AutoScaling instance via aws-sdk")
+
+      # Use the client to grab all instances in this auto-scaling group
+      all = autoscale.describe_auto_scaling_groups({
+        auto_scaling_group_names: [current.auto_scaling_instances[0].auto_scaling_group_name],
+        max_records: 1
+      })
+      @log.info("Grabbed the instances of our AutoScaling group via aws-sdk")
 
       # Grab their instanceId(s)
-      resp.auto_scaling_instances.each do |instance|
-	ids << idtoname(instance.instance_id)
+      all.auto_scaling_groups[0].instances.each do |instance|
+        ids << idtoname(instance.instance_id)
       end
+      @log.info("Returning instances '#{ids.join("','")}'")      
       
       # Return the ids
       ids
@@ -51,7 +62,7 @@ module Sortinghat
             key: 'Name',
             value: hostname,
           },
-	]
+	      ]
       })
       @log.info("Set Name tag to #{hostname} via aws-sdk")
     end
@@ -110,11 +121,8 @@ module Sortinghat
 
     def idtoname(instance_id)
       resource = Aws::EC2::Resource.new(client: @client)
-      resource.instance(instance_id).tags.each do |tag|
-        if tag.key == 'Name'
-          return tag.value
-        end
-      end
+      name = resource.instance(instance_id).tags.find { |tag| tag.key == 'Name' }
+      return name.value unless name.nil?
     end
 
     def zonetoid(hostedzone)
