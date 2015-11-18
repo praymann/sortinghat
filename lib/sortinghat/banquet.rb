@@ -29,17 +29,19 @@ module Sortinghat
       # Check for sentinel file
       if File.exists?('/etc/.sorted')
         # We found it, log error and exit successfully
-        @log.error('Found /etc/.sorted, refusing to sort.')
-        abort('Found /etc/.sorted, refusing to sort.')
+        @log.info('Found /etc/.sorted, refusing to sort.')
+        exit 0
       end
     end
 
     # Main method of Sortinghat
     def start!
       # Find out who is who, instances alive
+      # If discover() returns a nil Array, alive will be nil
       alive = cleanup(@aws.discover())
 
       # Given the alive instances, find our prefix
+      # If alive is nil, selection will return the number '1'
       @prefix = ensurezero(selection(alive))
 
       # Put together hostname/fqdn
@@ -48,6 +50,7 @@ module Sortinghat
       @aws.settag!(@hostname)
 
       # Find out who is who, instances alive
+      # If discover() returns a nil Array, alive will be nil
       alive = cleanup(@aws.discover())
 
       unless alive.uniq.length == alive.length
@@ -90,10 +93,14 @@ module Sortinghat
     end
 
     def cleanup(array)
+      return [] if array.any? { |item| item.nil? }
       array.select! { |name| name.include?(@options[:env]) and name.include?(@options[:client]) and name.include?(@options[:type]) }
     end
 
     def selection(array)
+      # If array is nil, just return 01
+      return 1 if array.nil?
+
       # Array to store the numbers already taken 
       taken = Array.new
       
