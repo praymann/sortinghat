@@ -36,9 +36,13 @@ module Sortinghat
 
     # Main method of Sortinghat
     def start!
+
+      # Best thing to avoid run conditions are to wait
+      sleep rand(5)
+
       # Find out who is who, instances alive
-      # If discover() returns a nil Array, alive will be nil
-      alive = cleanup(@aws.discover())
+      # If discover() returns an Array full of nil(s), alive will be nil
+      alive = cleanup!(@aws.discover())
 
       # Given the alive instances, find our prefix
       # If alive is nil, selection will return the number '1'
@@ -50,8 +54,8 @@ module Sortinghat
       @aws.settag!(@hostname)
 
       # Find out who is who, instances alive
-      # If discover() returns a nil Array, alive will be nil
-      alive = cleanup(@aws.discover())
+      # If discover() returns an Array full of nil(s), alive will be nil
+      alive = cleanup!(@aws.discover())
 
       unless alive.uniq.length == alive.length
         # There are duplicates, remove tag, wait, restart
@@ -92,8 +96,9 @@ module Sortinghat
       end
     end
 
-    def cleanup(array)
-      return [] if array.any? { |item| item.nil? }
+    def cleanup!(array)
+      array.reject! { |item| item.nil? }
+      return [] if array.empty?
       array.select! { |name| name.include?(@options[:env]) and name.include?(@options[:client]) and name.include?(@options[:type]) }
     end
 
