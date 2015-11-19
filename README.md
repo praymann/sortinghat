@@ -28,8 +28,10 @@ Install however you please to your AMI(s) with:
 The gem itself was developed under Ruby 2.0.0 to work with CentOS 7.
 
 It requires the following gems:
-* aws-sdk ~> 2
+* aws-sdk 2.1.2
 * pure_json
+
+The v2.1.2 dependency comes from the fact that as of this writting the latest codedeploy-agent (installed via .rpm) breaks if it does not have v2.1.2.
 
 During actually usage, the gem requires that the instance have the following IAM actions allowed via policy:
 * autoscaling:DescribeAutoScalingInstances

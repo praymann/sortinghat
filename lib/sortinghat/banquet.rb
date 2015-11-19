@@ -38,31 +38,34 @@ module Sortinghat
     def start!
 
       # Best thing to avoid run conditions are to wait
-      sleep rand(5)
+      sleep rand(10)
 
       # Find out who is who, instances alive
-      # If discover() returns an Array full of nil(s), alive will be nil
-      alive = cleanup!(@aws.discover())
+      # If discover() returns an Array full of nil(s), alive will become an empty Array
+      alive = cleanup(@aws.discover())
 
       # Given the alive instances, find our prefix
-      # If alive is nil, selection will return the number '1'
+      # If alive an empty array, selection will return the number '1'
       @prefix = ensurezero(selection(alive))
 
       # Put together hostname/fqdn
       construction()
 
+      # Set the Name tag on this instance
       @aws.settag!(@hostname)
 
       # Find out who is who, instances alive
-      # If discover() returns an Array full of nil(s), alive will be nil
-      alive = cleanup!(@aws.discover())
+      # If discover() returns an Array full of nil(s), alive will become an empty Array
+      alive = cleanup(@aws.discover())
 
+      # Only enter recursion if the uniq() length of the alive array does not equal the actual length
+      # On AutoScalingGroup initalization, the cleanup() should ensure the alive array is empty not nil so uniq() works
       unless alive.uniq.length == alive.length
         # There are duplicates, remove tag, wait, restart
         @aws.removetag!()
         sleep rand(10)
         start!()
-      end 
+      end
 
       # Register in DNS
       @aws.setroute53(@options[:zone], @fqdn)
@@ -88,6 +91,7 @@ module Sortinghat
 
     private
 
+    # Method to check that we have write permissions to /etc/*
     def checkpermissions()
       unless File.stat('/etc/hosts').writable?
         # We found it, log error and exit successfully
@@ -96,40 +100,46 @@ module Sortinghat
       end
     end
 
-    def cleanup!(array)
-      array.reject! { |item| item.nil? }
-      return [] if array.empty?
-      array.select! { |name| name.include?(@options[:env]) and name.include?(@options[:client]) and name.include?(@options[:type]) }
+    # Method to cleanup the array returned by aws.discover()
+    # Remove nil values basically
+    def cleanup(array)
+      clean = array.reject { |item| item.nil? }
+      return [] if clean.empty?
+      clean
     end
 
+    # Method to consume the alive array and figure out what this instance's prefix should be
     def selection(array)
-      # If array is nil, just return 01
-      return 1 if array.nil?
+      # If array is empty, just return 01
+      return 1 if array.empty?
 
-      # Array to store the numbers already taken 
+      # Array to store the numbers already taken
       taken = Array.new
-      
+
       # Filter the incoming array, find the numbers and store them in the taken Array
       array.each { |string| taken << string.scan(/\d./).join('').sub(/^0+/, '').to_i }
-      
+
       # We have two digits, define our range of numbers
       limits = (1..99).to_a
 
-      # Return the first value once we find what isn't taken in our range of numbers 
+      # Return the first value once we find what isn't taken in our range of numbers
       (limits - taken)[0]
     end
 
+    # Method to ensure our prefix always has a leading 0 if < 10
     def ensurezero(prefix)
       if prefix < 10
         prefix.to_s.rjust(2, "0")
       end
     end
 
+    # Method to construct our instance variables @hostname and @fqdn
     def construction()
       @hostname = "#{@options[:client]}-#{@options[:env]}-#{@options[:type]}#{@prefix.to_s}-#{@options[:region]}"
       @fqdn = "#{@options[:client]}-#{@options[:env]}-#{@options[:type]}#{@prefix.to_s}-#{@options[:region]}.#{@options[:zone]}"
     end
 
+    # Method to set the local hostname on this instance
     def setlocal()
       if system("hostnamectl set-hostname #{@fqdn}")
         @log.info("Set the localhost hostname to #{@fqdn}.")
@@ -139,7 +149,7 @@ module Sortinghat
     def sethostsfile()
       # Store the ip address so we only make one metadata call here
       privateip = @aws.privateip()
-      if File.readlines('/etc/hosts').grep(/#{@hostname}|#{privateip}/).size < 1 
+      if File.readlines('/etc/hosts').grep(/#{@hostname}|#{privateip}/).size < 1
         File.open('/etc/hosts', 'a') do |file|
           file.puts "#{@privateip} \t #{@hostname} #{@fqdn}"
         end
