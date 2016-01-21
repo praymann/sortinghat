@@ -128,9 +128,7 @@ module Sortinghat
 
     # Method to ensure our prefix always has a leading 0 if < 10
     def ensurezero(prefix)
-      if prefix < 10
-        prefix.to_s.rjust(2, "0")
-      end
+      prefix < 10 ? prefix.to_s.rjust(2, "0") : prefix
     end
 
     # Method to construct our instance variables @hostname and @fqdn
