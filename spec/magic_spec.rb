@@ -22,6 +22,12 @@ describe Sortinghat::Magic do
   describe '.selection' do
   end
 
+  describe '.dejavu?' do
+    it 'should return nil if file does not exist' do
+      expect(Sortinghat::Magic.dejavu?('/sortinghat.rb')).to eql nil
+    end
+  end
+
   describe '.ensurezero' do
   end
 
