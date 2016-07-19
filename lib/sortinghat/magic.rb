@@ -3,6 +3,11 @@ module Sortinghat
     # include all methods defined as class methods too
     extend self
 
+    def setsentinel!(file='/etc/.sorted')
+      # Create our sentinel file
+      FileUtils.touch('/etc/.sorted')
+    end
+
     # Method to figure out if we've been here before
     def dejavu?(file='/etc/.sorted')
       # Check for sentinel file
