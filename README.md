@@ -76,7 +76,7 @@ Run:
 
 ## Credits
 
-Kudos to my [nerk01](https://github.com/nerk01) for help and guidance with anything Ruby! He is also a contributor to this project. 
+Kudos to [nerk01](https://github.com/nerk01) for help and guidance with anything Ruby! He is also a contributor to this project. 
 
 ## Contributing
 
