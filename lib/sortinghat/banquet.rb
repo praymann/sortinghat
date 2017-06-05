@@ -108,7 +108,7 @@ module Sortinghat
       scalegroup_hosts = @aws.discover
 
       # determine the next available suffix
-      selection(scalegroup_hosts).find do |candidate|
+      selection(scalegroup_hosts).find(method(:assignment_unclear)) do |candidate|
         @suffix = ensurezero(candidate)
         construction
         matches = @aws.search_hosts(@hostname)
@@ -126,6 +126,11 @@ module Sortinghat
     def construction
       @hostname = "#{@options[:client]}-#{@options[:env]}-#{@options[:type]}#{@suffix}-#{@options[:region]}"
       @fqdn = "#{@options[:client]}-#{@options[:env]}-#{@options[:type]}#{@suffix}-#{@options[:region]}.#{@options[:zone]}"
+    end
+
+    def assignment_unclear
+      @suffix = "sh#{rand(100)}"
+      contruction
     end
 
     # Method to set the local hostname on this instance
