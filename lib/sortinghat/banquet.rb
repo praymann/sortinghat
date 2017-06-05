@@ -86,12 +86,12 @@ module Sortinghat
       clean
     end
 
-    # Method to consume the alive array and figure out what this instance's suffix should be
+    # Cconsume the alive array and return array of available suffix
     def selection(array)
       array = cleanup(array)
 
       # If array is empty, just return 01
-      return 1 if array.empty?
+      return [1] if array.empty?
 
       # Filter the incoming array, find the numbers and store them in the taken Array
       taken = array.map { |str| str[/^.*\D(\d{2,}).*/, 1].sub(/^0+/, '').to_i }
@@ -150,13 +150,12 @@ module Sortinghat
 
     def givetohttpd
       file = '/etc/sysconfig/httpd'
-      if File.exist?(file)
-        if File.readlines(file).grep(/HOSTNAME/).empty?
-          @log.info("Found #{file}, appending HOSTNAME=#{@hostname}.")
-          File.open(file, 'a') { |sysconfig| sysconfig.puts "HOSTNAME=#{@hostname}" }
-        else
-          @log.warn("Found HOSTNAME already in #{file}")
-        end
+      return unless File.exist?(file)
+      if File.readlines(file).grep(/HOSTNAME/).empty?
+        @log.info("Found #{file}, appending HOSTNAME=#{@hostname}.")
+        File.open(file, 'a') { |sysconfig| sysconfig.puts "HOSTNAME=#{@hostname}" }
+      else
+        @log.warn("Found HOSTNAME already in #{file}")
       end
     end
   end
