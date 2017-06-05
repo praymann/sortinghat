@@ -10,7 +10,8 @@ module Sortinghat
       @region = region
 
       # Set a generic client for use
-      @client = Aws::EC2::Client.new(region: @region)
+      @ec2_client = Aws::EC2::Client.new(region: @region)
+      @autoscale_client = Aws::AutoScaling::Client.new(region: @region)
 
       # Create a syslog for us to use as an instance variable
       @log = Syslog::Logger.new 'sortinghat'
@@ -19,19 +20,9 @@ module Sortinghat
     # Method to discover what auto-scaling group the current instance is in, then the instances in that group
     # Returns array of the Name tag values of the instances
     def discover
-      # Start a new client
-      autoscale = Aws::AutoScaling::Client.new(region: @region)
-
-      # Use the client to describe this instance
-      current = autoscale.describe_auto_scaling_instances(
-        instance_ids: [grabinstanceid],
-        max_records: 1
-      )
-      @log.info('Grabbed current AutoScaling instance via aws-sdk')
-
       # Use the client to grab all instances in this auto-scaling group
-      all = autoscale.describe_auto_scaling_groups(
-        auto_scaling_group_names: [current.auto_scaling_instances[0].auto_scaling_group_name],
+      all = @autoscale_client.describe_auto_scaling_groups(
+        auto_scaling_group_names: [find_own_autoscale_name],
         max_records: 1
       )
       @log.info('Grabbed the instances of our AutoScaling group via aws-sdk')
@@ -127,6 +118,18 @@ module Sortinghat
 
     def grabinstanceprivateip
       Net::HTTP.get_response(URI.parse('http://169.254.169.254/latest/meta-data/local-ipv4')).body
+    end
+
+    def find_own_autoscale_name
+      # Use the client to describe this instances autoscale
+      current_as = @autoscale_client.describe_auto_scaling_instances(
+        instance_ids: [grabinstanceid],
+        max_records: 1
+      )
+      @log.info('Grabbed current AutoScaling instance via aws-sdk')
+
+      # Return current autoscale name
+      current_as.auto_scaling_instances[0].auto_scaling_group_name
     end
   end
 end
