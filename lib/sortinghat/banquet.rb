@@ -130,7 +130,7 @@ module Sortinghat
 
     def assignment_unclear
       @suffix = "sh#{rand(100)}"
-      contruction
+      construction
     end
 
     # Method to set the local hostname on this instance
