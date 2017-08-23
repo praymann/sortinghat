@@ -1,7 +1,4 @@
 # Sortinghat
-[![Gem Version](https://badge.fury.io/rb/sortinghat.svg)](https://badge.fury.io/rb/sortinghat)
-[![Total Gem Downloads](https://ruby-gem-downloads-badge.herokuapp.com/sortinghat?type=total)](https://rubygems.org/gems/sortinghat)
-[![Build Status](https://travis-ci.org/praymann/sortinghat.svg?branch=master)](https://travis-ci.org/praymann/sortinghat?branch=master)
 
 Sortinghat is a unqiue Ruby gem that allows AWS AutoScaling instances to name themselves.
 
@@ -12,12 +9,12 @@ When the Sorting Hat is given specific arguments, it can find the gaps in curren
 It follows a specific pattern for hostnames/fqdn:
 
 ```
-[client]-[environment]-[type][prefix]-[region].[domain].com.
+[client]-[environment]-[type][prefix].[domain].com.
 ```
 For example:
 
 ```
-nike-prod-nginx09-ap-southeast-1.prod-nike.com
+nike-prod-nginx09.prod-nike.com
 ```
 
 ## Installation:
@@ -74,9 +71,6 @@ Run:
 
     $ bundle exec bin/sortinghat -h
 
-## Credits
-
-Kudos to my [nerk01](https://github.com/nerk01) for help and guidance with anything Ruby! He is also a contributor to this project. 
 
 ## Contributing
 

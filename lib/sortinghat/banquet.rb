@@ -25,7 +25,7 @@ module Sortinghat
     end
 
     # Main method of Sortinghat
-    def sort!
+    def start!
 
       # Check that we have write premissions
       checkpermissions('/etc/hosts')
@@ -73,7 +73,14 @@ module Sortinghat
       givetohttpd()
 
       # All done
-      setsentinel!()
+      finish!()
     end
+
+    # Last method of Sortinghat
+    def finish!
+      # Create our sentinel file
+      FileUtils.touch('/etc/.sorted')
+    end
+
   end
 end
