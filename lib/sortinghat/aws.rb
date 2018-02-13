@@ -5,13 +5,12 @@ require 'date'
 
 module Sortinghat
   class AWS
-    def initialize(region = 'us-east-1')
+    def initialize( region = 'us-east-1' )
       # Be using this lots, make it an instance variable
       @region = region
 
       # Set a generic client for use
-      @ec2_client = Aws::EC2::Client.new(region: @region)
-      @autoscale_client = Aws::AutoScaling::Client.new(region: @region)
+      @client = Aws::EC2::Client.new(region: @region)
 
       # Create a syslog for us to use as an instance variable
       @log = Syslog::Logger.new 'sortinghat'
@@ -19,28 +18,35 @@ module Sortinghat
 
     # Method to discover what auto-scaling group the current instance is in, then the instances in that group
     # Returns array of the Name tag values of the instances
-    def discover
-      # Use the client to grab all instances in this auto-scaling group
-      all = @autoscale_client.describe_auto_scaling_groups(
-        auto_scaling_group_names: [find_own_autoscale_name],
+    def discover()
+      # Temporay array for use
+      ids = Array.new
+      
+      # Start a new client
+      autoscale = Aws::AutoScaling::Client.new( region: @region )
+
+      # Use the client to describe this instance
+      current = autoscale.describe_auto_scaling_instances({
+        instance_ids: [grabinstanceid()],
         max_records: 1
-      )
-      @log.info('Grabbed the instances of our AutoScaling group via aws-sdk')
+      })
+      @log.info("Grabbed current AutoScaling instance via aws-sdk")
 
-      # Grab their hostname(s)
-      names = all.auto_scaling_groups[0].instances.map { |instance| idtoname(instance.instance_id) }
-      @log.info("Returning instances '#{names.join("','")}'")
+      # Use the client to grab all instances in this auto-scaling group
+      all = autoscale.describe_auto_scaling_groups({
+        auto_scaling_group_names: [current.auto_scaling_instances[0].auto_scaling_group_name],
+        max_records: 1
+      })
+      @log.info("Grabbed the instances of our AutoScaling group via aws-sdk")
 
+      # Grab their instanceId(s)
+      all.auto_scaling_groups[0].instances.each do |instance|
+        ids << idtoname(instance.instance_id)
+      end
+      @log.info("Returning instances '#{ids.join("','")}'")      
+      
       # Return the ids
-      names
-    end
-
-    # Method to search for instances matching a hostname
-    # Returns array of instances
-    def search_hosts(hostname)
-      resp = @client.describe_instances(filters: [{ name: 'tag:Name', value: [hostname] }])
-      return resp.reservations unless resp.reservations.empty?
-      []
+      ids
     end
 
     # Method to set the Name tag on the current instance
@@ -50,22 +56,32 @@ module Sortinghat
       resource = Aws::EC2::Resource.new(client: @client)
 
       # Use the resource, to find current instance, and set the Name tag
-      resource.instance(grabinstanceid)
-              .create_tags(tags: [{ key: 'Name', value: hostname }])
+      resource.instance(grabinstanceid()).create_tags({
+        tags: [
+          { 
+            key: 'Name',
+            value: hostname,
+          },
+	      ]
+      })
       @log.info("Set Name tag to #{hostname} via aws-sdk")
     end
 
     # Method to remove the Name tag, and set a temporary one
     # Returns nothing
-    def removetag!
+    def removetag!()
       # Use the instance varible client to create a new Resource
       resource = Aws::EC2::Resource.new(client: @client)
 
       # Use the resource, to find current instance, and set the Name tag
-      resource.instance(grabinstanceid)
-              .create_tags(
-                tags: [{ key: 'Name', value: "sortinghat-#{rand(100)}" }]
-              )
+      resource.instance(grabinstanceid()).create_tags({
+        tags: [
+          {
+            key: 'Name',
+            value: "sortinghat-#{rand(100)}",
+          },
+        ]
+      })
       @log.info("Set Name tag to temporary #{hostname} via aws-sdk")
     end
 
@@ -73,10 +89,10 @@ module Sortinghat
     # Returns nothing
     def setroute53(zone, fqdn)
       # Create a new client, and use it to update/insert our A record
-      Aws::Route53::Client.new(region: @region).change_resource_record_sets(
+      Aws::Route53::Client.new(region: @region).change_resource_record_sets({
         hosted_zone_id: zonetoid(zone),
         change_batch: {
-          comment: "Sorting Hat #{Date.today}",
+          comment: "Sorting Hat #{Date.today.to_s}",
           changes: [
             {
               action: 'UPSERT',
@@ -84,18 +100,22 @@ module Sortinghat
                 name: fqdn,
                 type: 'A',
                 ttl: '30',
-                resource_records: [{ value: grabinstanceprivateip }]
-              }
-            }
-          ]
-        }
-      )
+                resource_records: [
+                  {
+                    value: grabinstanceprivateip()
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      })  
       @log.info("Issued UPSERT to Route53 for #{fqdn}")
     end
 
-    def privateip
-      grabinstanceprivateip
-    end
+    def privateip()
+      return grabinstanceprivateip()
+    end 
 
     private
 
@@ -106,30 +126,20 @@ module Sortinghat
     end
 
     def zonetoid(hostedzone)
-      resp = Aws::Route53::Client.new(region: @region).list_hosted_zones
+      resp = Aws::Route53::Client.new(region: @region).list_hosted_zones()
       resp.hosted_zones.each do |zone|
-        return zone.id if zone.name == hostedzone
+        if zone.name == hostedzone
+          return zone.id
+        end
       end
     end
 
-    def grabinstanceid
-      Net::HTTP.get_response(URI.parse('http://169.254.169.254/latest/meta-data/instance-id')).body
+    def grabinstanceid()
+      return Net::HTTP.get_response(URI.parse("http://169.254.169.254/latest/meta-data/instance-id")).body
     end
 
-    def grabinstanceprivateip
-      Net::HTTP.get_response(URI.parse('http://169.254.169.254/latest/meta-data/local-ipv4')).body
-    end
-
-    def find_own_autoscale_name
-      # Use the client to describe this instances autoscale
-      current_as = @autoscale_client.describe_auto_scaling_instances(
-        instance_ids: [grabinstanceid],
-        max_records: 1
-      )
-      @log.info('Grabbed current AutoScaling instance via aws-sdk')
-
-      # Return current autoscale name
-      current_as.auto_scaling_instances[0].auto_scaling_group_name
+    def grabinstanceprivateip()
+      return Net::HTTP.get_response(URI.parse("http://169.254.169.254/latest/meta-data/local-ipv4")).body
     end
   end
 end
