@@ -26,7 +26,7 @@ parser = OptionParser.new do |opt|
   end
 
   opt.on("-r", "--region REGION", "Region name") do |region|
-    options[:region] = region
+    options[:region] = region 
   end
 
   opt.on("-z", "--zone DOMAIN", "Hosted Zone") do |zone|
@@ -41,6 +41,12 @@ end
 
 parser.parse!
 
-abort 'All options are required.' if options.length < 5
+if options.length < 5 
+  abort "All options are required."
+end
 
-Sortinghat::Banquet.assign_house(options)
+this = Sortinghat::Banquet.new(options)
+
+this.dejavu?
+
+this.start!
