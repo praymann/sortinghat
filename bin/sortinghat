@@ -5,13 +5,17 @@ require 'optparse'
 
 options = {}
 
+# Default to being numbered instances
+options[:numbered] = true
+
 parser = OptionParser.new do |opt|
-  opt.banner = "Usage: sortinghat [OPTIONS]"
-  opt.separator ""
-  opt.separator "All options are required for the Sorting Hat to function."
-  opt.separator "A trailing dot will be added to the zone should you forget it."
-  opt.separator ""
-  opt.separator "Options:"
+  opt.banner = 'Usage: sortinghat [OPTIONS]'
+  opt.separator ''
+  opt.separator 'All options except --numbered are required for the Sorting Hat to function.'
+  opt.separator 'The option --numbered is by default \'true\''
+  opt.separator 'A trailing dot will be added to the zone should you forget it.'
+  opt.separator ''
+  opt.separator 'Options:'
 
   opt.on("-c", "--client CLIENT", "Client name") do |client|
     options[:client] = client
@@ -31,6 +35,10 @@ parser = OptionParser.new do |opt|
 
   opt.on("-z", "--zone DOMAIN", "Hosted Zone") do |zone|
     options[:zone] = zone
+  end
+
+  opt.on('-n', '--[not-]numbered', 'Number suffix?') do |numbered|
+    options[:numbered] = numbered
   end
 
   opt.on("-h", "--help", "Help menu") do

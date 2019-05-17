@@ -3,7 +3,6 @@ require 'fileutils'
 
 module Sortinghat
   class Banquet
-
     def self.assign_house(options = {})
       this = new(options)
       this.dejavu?
@@ -109,7 +108,8 @@ module Sortinghat
 
       # determine the next available suffix
       selection(scalegroup_hosts).find(method(:assignment_unclear)) do |candidate|
-        @suffix = ensurezero(candidate)
+        @suffix = ''
+        @suffix = ensurezero(candidate) if @options[:numbered]
         construction
         matches = @aws.search_hosts(@hostname)
         matches.empty?
@@ -129,7 +129,7 @@ module Sortinghat
     end
 
     def assignment_unclear
-      @suffix = "sh#{rand(100)}"
+      @suffix = ensurezero("#{rand(100)}")
       construction
     end
 
