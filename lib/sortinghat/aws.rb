@@ -62,10 +62,9 @@ module Sortinghat
       resource = Aws::EC2::Resource.new(client: @client)
 
       # Use the resource, to find current instance, and set the Name tag
+      hostname = "sortinghat-#{rand(100)}"
       resource.instance(grabinstanceid)
-              .create_tags(
-                tags: [{ key: 'Name', value: "sortinghat-#{rand(100)}" }]
-              )
+              .create_tags(tags: [{ key: 'Name', value: hostname }])
       @log.info("Set Name tag to temporary #{hostname} via aws-sdk")
     end
 
